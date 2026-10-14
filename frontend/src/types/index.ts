@@ -13,6 +13,20 @@ export type BusinessType =
 
 export type VerificationStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
 
+export type ProductStatus =
+  | 'DRAFT'
+  | 'PENDING_REVIEW'
+  | 'PUBLISHED'
+  | 'ARCHIVED'
+  | 'SUSPENDED';
+
+export type DocumentType =
+  | 'BUSINESS_LICENSE'
+  | 'TIN_CERTIFICATE'
+  | 'VAT_CERTIFICATE'
+  | 'IMPORT_EXPORT_PERMIT'
+  | 'OTHER';
+
 export type WholesaleUnit =
   | 'PIECE'
   | 'CARTON'

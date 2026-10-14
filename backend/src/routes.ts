@@ -6,6 +6,7 @@ import { businessRoutes } from './modules/businesses/business.routes';
 import { categoryRoutes } from './modules/categories/categories.routes';
 import { productRoutes } from './modules/products/products.routes';
 import { supplierRoutes } from './modules/suppliers/suppliers.routes';
+import { supplierPortalRoutes } from './modules/supplier-portal/supplier-portal.routes';
 import { authenticate, requireRole } from './middleware/auth.middleware';
 
 const router = Router();
@@ -16,6 +17,7 @@ router.use('/businesses', businessRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/products', productRoutes);
 router.use('/suppliers', supplierRoutes);
+router.use('/supplier', supplierPortalRoutes);
 
 // Protected admin test endpoint for authorization verification
 router.get('/admin/test', authenticate, requireRole([UserRole.ADMIN]), (req, res) => {
