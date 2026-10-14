@@ -1,0 +1,20 @@
+// WholesaleHub Ethiopia - Prisma Schema
+// Database configuration for PostgreSQL (Neon / Managed Postgres)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Stage 2 will implement the complete models:
+// User, Session, Business, BusinessMembership, SupplierProfile,
+// SupplierVerificationDocument, Address, Category, Product, ProductImage,
+// Inventory, PriceTier, Favorite, Cart, CartItem, Order, OrderItem,
+// OrderStatusHistory, QuotationRequest, Quotation, QuotationItem,
+// QuotationRevision, Payment, PaymentEvent, Invoice, Shipment,
+// Conversation, Message, Notification, Review, Complaint, CommissionRule,
+// SupplierSettlement, AuditLog, PlatformSetting.
