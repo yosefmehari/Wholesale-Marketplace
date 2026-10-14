@@ -11,6 +11,12 @@ const envSchema = z.object({
   API_PREFIX: z.string().default('/api/v1'),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
   DATABASE_URL: z.string().optional(),
+  JWT_ACCESS_SECRET: z
+    .string()
+    .default('dev-super-secret-jwt-access-key-for-wholesalehub-ethiopia-minimum-32-chars'),
+  JWT_REFRESH_SECRET: z
+    .string()
+    .default('dev-super-secret-jwt-refresh-key-for-wholesalehub-ethiopia-minimum-32-chars'),
   DEFAULT_CURRENCY: z.string().default('ETB'),
   DEFAULT_TIMEZONE: z.string().default('Africa/Addis_Ababa'),
 });

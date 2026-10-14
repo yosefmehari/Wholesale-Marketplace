@@ -1,6 +1,7 @@
 // Core domain type definitions for WholesaleHub Ethiopia
 
 export type UserRole = 'GUEST' | 'BUYER' | 'SUPPLIER' | 'ADMIN';
+export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATED';
 
 export type BusinessType =
   | 'MANUFACTURER'
