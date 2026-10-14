@@ -19,7 +19,7 @@ Production-ready, secure, and responsive B2B wholesale marketplace connecting ve
 - [x] **Stage 1:** Frontend/backend setup, dependencies, environment validation, health endpoint, i18n localization, and documentation.
 - [x] **Stage 2:** PostgreSQL, Prisma schema, migrations, initial ER diagram, and development seed.
 - [x] **Stage 3:** Authentication, sessions, roles, business profiles, and authorization tests.
-- [ ] **Stage 4:** Public marketplace UI, navigation, categories, product discovery, and responsive design.
+- [x] **Stage 4:** Public marketplace UI, navigation, categories, product discovery, and responsive design.
 - [ ] **Stage 5:** Supplier onboarding, verification, product management, inventory, and tiered pricing.
 - [ ] **Stage 6:** Search, filters, sorting, favorites, and supplier discovery.
 - [ ] **Stage 7:** Cart, checkout, order creation, transactional stock management, and order history.

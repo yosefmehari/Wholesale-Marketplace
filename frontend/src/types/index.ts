@@ -13,6 +13,19 @@ export type BusinessType =
 
 export type VerificationStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
 
+export type WholesaleUnit =
+  | 'PIECE'
+  | 'CARTON'
+  | 'BOX'
+  | 'KILOGRAM'
+  | 'BAG'
+  | 'LITER'
+  | 'PACK'
+  | 'SET'
+  | 'DOZEN'
+  | 'ROLL'
+  | 'METER';
+
 export type Currency = 'ETB' | 'USD';
 
 export interface PriceTier {
