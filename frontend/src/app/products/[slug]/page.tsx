@@ -6,6 +6,8 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Locale, getTranslations } from '@/lib/i18n';
 import { catalogService, Product } from '@/services/catalog.service';
+import { cartService } from '@/services/cart.service';
+import { useAuth } from '@/context/auth-context';
 import {
   ShieldCheck,
   Building2,
@@ -94,12 +96,29 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
       return quantity >= tier.minQuantity;
     }) || product.priceTiers?.[0];
 
+  const [isAdding, setIsAdding] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+
   const unitPrice = activeTier ? Number(activeTier.unitPrice) : 0;
   const totalPrice = unitPrice * quantity;
 
-  const handleAddToCart = () => {
-    setCartSuccess(true);
-    setTimeout(() => setCartSuccess(false), 3000);
+  const handleAddToCart = async () => {
+    if (!product) return;
+    setIsAdding(true);
+    setAddError(null);
+    try {
+      const res = await cartService.addToCart(product.id, quantity);
+      if (res.success) {
+        setCartSuccess(true);
+        setTimeout(() => setCartSuccess(false), 3500);
+      } else {
+        setAddError(res.error?.message || 'Failed to add item to wholesale cart');
+      }
+    } catch (err: any) {
+      setAddError(err.message || 'Please sign in to add items to your wholesale cart');
+    } finally {
+      setIsAdding(false);
+    }
   };
 
   return (
@@ -313,9 +332,21 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                 </div>
 
                 {cartSuccess && (
-                  <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Item added to wholesale cart for checkout!</span>
+                  <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Item added to wholesale cart!</span>
+                    </div>
+                    <Link href="/cart" className="font-bold underline hover:text-emerald-950">
+                      View Cart &rarr;
+                    </Link>
+                  </div>
+                )}
+
+                {addError && (
+                  <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                    <span>{addError}</span>
                   </div>
                 )}
 
@@ -323,10 +354,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                   <button
                     onClick={handleAddToCart}
-                    className="flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 px-4 rounded-xl text-sm shadow-sm transition"
+                    disabled={isAdding}
+                    className="flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 disabled:bg-emerald-400 text-white font-bold py-3 px-4 rounded-xl text-sm shadow-sm transition"
                   >
-                    <ShoppingCart className="w-4 h-4" />
-                    <span>Add to Wholesale Cart</span>
+                    {isAdding ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <ShoppingCart className="w-4 h-4" />
+                    )}
+                    <span>{isAdding ? 'Adding...' : 'Add to Wholesale Cart'}</span>
                   </button>
 
                   <Link

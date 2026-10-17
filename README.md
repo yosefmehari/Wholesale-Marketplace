@@ -22,7 +22,7 @@ Production-ready, secure, and responsive B2B wholesale marketplace connecting ve
 - [x] **Stage 4:** Public marketplace UI, navigation, categories, product discovery, and responsive design.
 - [x] **Stage 5:** Supplier onboarding, verification, product management, inventory, and tiered pricing.
 - [x] **Stage 6:** Search, filters, sorting, favorites, and supplier discovery.
-- [ ] **Stage 7:** Cart, checkout, order creation, transactional stock management, and order history.
+- [x] **Stage 7:** Cart, checkout, order creation, transactional stock management, and order history.
 - [ ] **Stage 8:** Quotations, price negotiation, revisions, and accepted-quotation orders.
 - [ ] **Stage 9:** Payments architecture, manual payment workflows, provider adapters, invoices, and commissions.
 - [ ] **Stage 10:** Delivery management, messaging, and notifications.
