@@ -61,5 +61,11 @@
 | `/quotations/rfqs/:id/request-revision` | POST | Buyer | Request counter-offer or terms revision | Stage 8 |
 | `/quotations/rfqs/:id/decline` | POST | Buyer/Supplier | Decline quotation proposal | Stage 8 |
 | `/quotations/rfqs/:id/accept` | POST | Buyer | Accept quotation and convert into binding purchase order | Stage 8 |
-| `/payments/process` | POST | Buyer | Payment provider adapter / bank wire | Stage 9 |
-| `/invoices/:orderId` | GET | Buyer/Supplier | Commercial invoice generation | Stage 9 |
+| `/payments/initiate` | POST | Buyer | Initiate order payment (Telebirr, CBE Birr, Bank Transfer) | Stage 9 |
+| `/payments/submit-proof` | POST | Buyer | Submit bank wire deposit slip transaction reference | Stage 9 |
+| `/payments/:id/verify` | POST | Supplier/Admin | Verify manual bank transfer or mobile payment | Stage 9 |
+| `/payments/order/:orderId` | GET | Buyer/Supplier/Admin | Retrieve payment audit trail and status for an order | Stage 9 |
+| `/payments/webhook/telebirr` | POST | Public (Webhook) | Telebirr asynchronous payment notification webhook | Stage 9 |
+| `/invoices/:orderId` | GET | Buyer/Supplier/Admin | Generate formal B2B Ethiopian commercial sales invoice | Stage 9 |
+| `/settlements` | GET | Supplier/Admin | Supplier settlements ledger, 3% commission, and payout balances | Stage 9 |
+| `/settlements/:id/payout` | PATCH | Admin | Mark supplier settlement as paid out with payout reference | Stage 9 |

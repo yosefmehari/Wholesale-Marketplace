@@ -6,6 +6,7 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Locale, getTranslations } from '@/lib/i18n';
 import { orderService, Order, OrderStatus } from '@/services/order.service';
+import { paymentService, Payment, PaymentMethod } from '@/services/payment.service';
 import { useAuth } from '@/context/auth-context';
 import {
   Package,
@@ -22,6 +23,9 @@ import {
   Phone,
   Mail,
   Calendar,
+  CreditCard,
+  FileText,
+  DollarSign,
 } from 'lucide-react';
 
 const LIFECYCLE_STEPS: Array<{ key: OrderStatus; label: string }> = [
@@ -48,6 +52,16 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
   const [cancelReason, setCancelReason] = useState('');
   const [showCancelModal, setShowCancelModal] = useState(false);
 
+  // Payment state
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('BANK_TRANSFER');
+  const [transactionRef, setTransactionRef] = useState('');
+  const [paymentNotes, setPaymentNotes] = useState('');
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  const [paymentStep, setPaymentStep] = useState<'choose' | 'submit_proof' | 'telebirr_sim'>('choose');
+  const [activePaymentId, setActivePaymentId] = useState<string | null>(null);
+
   const loadOrder = async () => {
     setIsLoading(true);
     try {
@@ -56,6 +70,11 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
         setOrder(res.data);
       } else {
         setError(res.error?.message || 'Order not found');
+      }
+      // Also fetch payments
+      const payRes = await paymentService.getOrderPayments(resolvedParams.id);
+      if (payRes.success && payRes.data) {
+        setPayments(payRes.data);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load order details');
@@ -67,6 +86,76 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
   useEffect(() => {
     loadOrder();
   }, [resolvedParams.id]);
+
+  const handleInitiatePayment = async () => {
+    if (!order) return;
+    setIsSubmittingPayment(true);
+    try {
+      const res = await paymentService.initiatePayment(order.id, selectedMethod);
+      if (res.success && res.data) {
+        setActivePaymentId(res.data.payment.id);
+        if (selectedMethod === 'TELEBIRR') {
+          setPaymentStep('telebirr_sim');
+        } else {
+          setPaymentStep('submit_proof');
+        }
+      } else {
+        alert(res.error?.message || 'Failed to initiate payment');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Payment initiation failed');
+    } finally {
+      setIsSubmittingPayment(false);
+    }
+  };
+
+  const handleSubmitProof = async () => {
+    if (!activePaymentId || !transactionRef.trim()) {
+      alert('Please enter a valid bank transaction reference number');
+      return;
+    }
+    setIsSubmittingPayment(true);
+    try {
+      const res = await paymentService.submitPaymentProof(
+        activePaymentId,
+        transactionRef.trim(),
+        paymentNotes.trim() || undefined
+      );
+      if (res.success) {
+        setShowPaymentModal(false);
+        setPaymentStep('choose');
+        setTransactionRef('');
+        setPaymentNotes('');
+        await loadOrder();
+      } else {
+        alert(res.error?.message || 'Failed to submit payment proof');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Submission failed');
+    } finally {
+      setIsSubmittingPayment(false);
+    }
+  };
+
+  const handleSimulateTelebirrComplete = async () => {
+    if (!activePaymentId) return;
+    setIsSubmittingPayment(true);
+    try {
+      // In sandbox/simulation, Telebirr completes via verification
+      const res = await paymentService.verifyPayment(activePaymentId);
+      if (res.success) {
+        setShowPaymentModal(false);
+        setPaymentStep('choose');
+        await loadOrder();
+      } else {
+        alert(res.error?.message || 'Failed to verify Telebirr payment');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Telebirr simulation error');
+    } finally {
+      setIsSubmittingPayment(false);
+    }
+  };
 
   const handleCancel = async () => {
     if (!order) return;
@@ -164,14 +253,37 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                 </div>
               </div>
 
-              {order.status === 'PENDING_CONFIRMATION' && (
-                <button
-                  onClick={() => setShowCancelModal(true)}
-                  className="px-4 py-2 border border-rose-300 text-rose-700 hover:bg-rose-50 text-xs font-bold rounded-xl self-start sm:self-auto transition"
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href={`/orders/${order.id}/invoice`}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition"
                 >
-                  Cancel Order
-                </button>
-              )}
+                  <FileText className="w-3.5 h-3.5 text-slate-600" />
+                  <span>Commercial Invoice</span>
+                </Link>
+
+                {order.status !== 'CANCELLED' && order.status !== 'REJECTED' && (
+                  <button
+                    onClick={() => {
+                      setPaymentStep('choose');
+                      setShowPaymentModal(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-xs transition"
+                  >
+                    <CreditCard className="w-3.5 h-3.5" />
+                    <span>Pay / Submit Bank Slip</span>
+                  </button>
+                )}
+
+                {order.status === 'PENDING_CONFIRMATION' && (
+                  <button
+                    onClick={() => setShowCancelModal(true)}
+                    className="px-3 py-2 border border-rose-300 text-rose-700 hover:bg-rose-50 text-xs font-bold rounded-xl transition"
+                  >
+                    Cancel Order
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Lifecycle Stepper */}
@@ -368,6 +480,76 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                   </div>
                 )}
 
+                {/* Payment & Settlement Summary Card */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+                      Payment & Settlement
+                    </h3>
+                    <CreditCard className="w-4 h-4 text-emerald-700" />
+                  </div>
+
+                  {payments.length > 0 ? (
+                    <div className="space-y-3">
+                      {payments.map((p) => (
+                        <div key={p.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-900">{p.paymentMethod.replace(/_/g, ' ')}</span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                              p.status === 'COMPLETED'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : p.status === 'SUBMITTED_FOR_VERIFICATION'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {p.status.replace(/_/g, ' ')}
+                            </span>
+                          </div>
+
+                          <div className="text-slate-600">
+                            Amount: <span className="font-mono font-bold text-slate-800">{p.amount.toLocaleString()} {p.currency}</span>
+                          </div>
+
+                          {p.transactionReference && (
+                            <div className="text-slate-500 font-mono text-[11px] truncate">
+                              Ref: {p.transactionReference}
+                            </div>
+                          )}
+
+                          {p.verifiedAt && (
+                            <div className="text-emerald-700 text-[10px] flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Verified {new Date(p.verifiedAt).toLocaleDateString()}</span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-800">
+                        <span className="font-bold block">Payment Awaiting Settlement</span>
+                        <p className="mt-0.5 text-[11px] text-amber-700">
+                          Complete payment via Telebirr or direct Ethiopian bank wire transfer (CBE, Awash, Dashen).
+                        </p>
+                      </div>
+
+                      {order.status !== 'CANCELLED' && order.status !== 'REJECTED' && (
+                        <button
+                          onClick={() => {
+                            setPaymentStep('choose');
+                            setShowPaymentModal(true);
+                          }}
+                          className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2"
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          <span>Initiate Payment</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* Status Audit Log */}
                 {order.statusHistory && order.statusHistory.length > 0 && (
                   <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-3">
@@ -437,6 +619,193 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                   {isCancelling ? 'Cancelling...' : 'Cancel Order'}
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Payment Modal */}
+        {showPaymentModal && order && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 space-y-5">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">B2B Order Payment</h3>
+                  <p className="text-xs text-slate-500">Order #{order.orderNumber} • {order.totalAmount.toLocaleString()} ETB</p>
+                </div>
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  className="text-slate-400 hover:text-slate-600 text-xs font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {paymentStep === 'choose' && (
+                <div className="space-y-4">
+                  <span className="text-xs font-semibold text-slate-700 block">
+                    Select Ethiopian Payment Gateway / Channel:
+                  </span>
+
+                  <div className="space-y-2.5">
+                    <label
+                      onClick={() => setSelectedMethod('BANK_TRANSFER')}
+                      className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition ${
+                        selectedMethod === 'BANK_TRANSFER'
+                          ? 'border-emerald-600 bg-emerald-50/50 ring-1 ring-emerald-600'
+                          : 'border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="payMethod"
+                        checked={selectedMethod === 'BANK_TRANSFER'}
+                        onChange={() => setSelectedMethod('BANK_TRANSFER')}
+                        className="mt-1 text-emerald-700"
+                      />
+                      <div className="text-xs">
+                        <span className="font-bold text-slate-900 block">Bank Wire Transfer (CBE, Awash, Dashen, Abyssinia)</span>
+                        <p className="text-slate-500 mt-0.5">
+                          Direct deposit to WholesaleHub corporate escrow account. Upload or input transaction slip ref.
+                        </p>
+                      </div>
+                    </label>
+
+                    <label
+                      onClick={() => setSelectedMethod('TELEBIRR')}
+                      className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition ${
+                        selectedMethod === 'TELEBIRR'
+                          ? 'border-emerald-600 bg-emerald-50/50 ring-1 ring-emerald-600'
+                          : 'border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="payMethod"
+                        checked={selectedMethod === 'TELEBIRR'}
+                        onChange={() => setSelectedMethod('TELEBIRR')}
+                        className="mt-1 text-emerald-700"
+                      />
+                      <div className="text-xs">
+                        <span className="font-bold text-slate-900 block">Telebirr SuperApp / Web Checkout</span>
+                        <p className="text-slate-500 mt-0.5">
+                          Instant mobile wallet settlement with official Ethio Telecom gateway.
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      onClick={() => setShowPaymentModal(false)}
+                      className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleInitiatePayment}
+                      disabled={isSubmittingPayment}
+                      className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:bg-slate-300 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                    >
+                      {isSubmittingPayment && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                      <span>Continue</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {paymentStep === 'telebirr_sim' && (
+                <div className="space-y-4">
+                  <div className="p-4 bg-sky-50 rounded-xl border border-sky-200 text-xs text-sky-900 space-y-2">
+                    <span className="font-bold block">Telebirr Sandbox Payment Flow</span>
+                    <p className="text-sky-800">
+                      Amount: <span className="font-mono font-bold">{order.totalAmount.toLocaleString()} ETB</span>
+                    </p>
+                    <p className="text-[11px] text-sky-700 leading-relaxed">
+                      Telebirr Web H5 payment session generated. In sandbox mode, click Simulate Complete Payment to trigger automated webhook verification and receipt creation.
+                    </p>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      onClick={() => setPaymentStep('choose')}
+                      disabled={isSubmittingPayment}
+                      className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800"
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={handleSimulateTelebirrComplete}
+                      disabled={isSubmittingPayment}
+                      className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:bg-slate-300 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                    >
+                      {isSubmittingPayment && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                      <span>Simulate Complete Payment</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {paymentStep === 'submit_proof' && (
+                <div className="space-y-4 text-xs">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                    <span className="font-bold text-slate-900 block">WholesaleHub Escrow Bank Accounts:</span>
+                    <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600">
+                      <div className="p-2 bg-white rounded-lg border border-slate-100">
+                        <span className="font-bold text-slate-800 block">Commercial Bank of Ethiopia (CBE)</span>
+                        <span className="font-mono text-emerald-800 font-bold">1000234567890</span>
+                      </div>
+                      <div className="p-2 bg-white rounded-lg border border-slate-100">
+                        <span className="font-bold text-slate-800 block">Awash Bank</span>
+                        <span className="font-mono text-emerald-800 font-bold">01320876543200</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">
+                      Bank Transaction / Deposit Slip Reference Number *
+                    </label>
+                    <input
+                      type="text"
+                      value={transactionRef}
+                      onChange={(e) => setTransactionRef(e.target.value)}
+                      placeholder="e.g. FT234859032 or CBE-BIRR-9842"
+                      className="w-full p-2.5 border border-slate-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">
+                      Additional Notes / Depositor Name (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={paymentNotes}
+                      onChange={(e) => setPaymentNotes(e.target.value)}
+                      placeholder="e.g. Deposited by Alemayehu Kebede from Finfine Branch"
+                      className="w-full p-2.5 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      onClick={() => setPaymentStep('choose')}
+                      disabled={isSubmittingPayment}
+                      className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800"
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={handleSubmitProof}
+                      disabled={isSubmittingPayment}
+                      className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:bg-slate-300 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                    >
+                      {isSubmittingPayment && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                      <span>Submit Payment Proof</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

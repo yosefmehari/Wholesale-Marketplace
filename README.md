@@ -24,7 +24,7 @@ Production-ready, secure, and responsive B2B wholesale marketplace connecting ve
 - [x] **Stage 6:** Search, filters, sorting, favorites, and supplier discovery.
 - [x] **Stage 7:** Cart, checkout, order creation, transactional stock management, and order history.
 - [x] **Stage 8:** Quotations, price negotiation, revisions, and accepted-quotation orders.
-- [ ] **Stage 9:** Payments architecture, manual payment workflows, provider adapters, invoices, and commissions.
+- [x] **Stage 9:** Payments architecture, manual payment workflows, provider adapters (Telebirr, Ethiopian bank transfers), commercial invoices, and supplier commissions.
 - [ ] **Stage 10:** Delivery management, messaging, and notifications.
 - [ ] **Stage 11:** Reviews, complaints, disputes, and administrative moderation.
 - [ ] **Stage 12:** Full administrator dashboard, audit logs, reporting, and settings.

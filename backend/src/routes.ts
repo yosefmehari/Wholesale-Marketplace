@@ -12,6 +12,9 @@ import { cartRoutes } from './modules/cart/cart.routes';
 import { orderRoutes } from './modules/orders/orders.routes';
 import { addressRoutes } from './modules/addresses/address.routes';
 import { quotationRoutes } from './modules/quotations/quotations.routes';
+import { paymentRoutes } from './modules/payments/payments.routes';
+import { invoiceRoutes } from './modules/invoices/invoices.routes';
+import { settlementRoutes } from './modules/settlements/settlements.routes';
 import { authenticate, requireRole } from './middleware/auth.middleware';
 
 const router = Router();
@@ -28,6 +31,9 @@ router.use('/cart', cartRoutes);
 router.use('/orders', orderRoutes);
 router.use('/addresses', addressRoutes);
 router.use('/quotations', quotationRoutes);
+router.use('/payments', paymentRoutes);
+router.use('/invoices', invoiceRoutes);
+router.use('/settlements', settlementRoutes);
 
 // Protected admin test endpoint for authorization verification
 router.get('/admin/test', authenticate, requireRole([UserRole.ADMIN]), (req, res) => {
