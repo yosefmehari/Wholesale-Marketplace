@@ -54,7 +54,12 @@
 | `/orders/:id/cancel` | PATCH | Buyer/Supplier/Admin | Cancel order and atomically restore inventory stock | Stage 7 |
 | `/orders/:id/status` | PATCH | Supplier/Admin | Advance fulfillment status with valid state transitions | Stage 7 |
 | `/orders/supplier/list` | GET | Supplier | Orders received by supplier fulfillment center | Stage 7 |
-| `/addresses` | GET/POST | Buyer | Manage commercial delivery addresses | Stage 7 |
-| `/quotations` | GET/POST | Buyer/Supplier | RFQ negotiation & revisions | Stage 8 |
+| `/quotations/rfq` | POST | Buyer | Submit new RFQ with line items and delivery specs | Stage 8 |
+| `/quotations/rfqs` | GET | Buyer/Supplier | List RFQs by role, status, and pagination | Stage 8 |
+| `/quotations/rfqs/:id` | GET | Buyer/Supplier/Admin | Full RFQ details, proposal versions, and negotiation history | Stage 8 |
+| `/quotations/rfqs/:id/quote` | POST | Supplier | Submit formal quotation version with offered unit rates | Stage 8 |
+| `/quotations/rfqs/:id/request-revision` | POST | Buyer | Request counter-offer or terms revision | Stage 8 |
+| `/quotations/rfqs/:id/decline` | POST | Buyer/Supplier | Decline quotation proposal | Stage 8 |
+| `/quotations/rfqs/:id/accept` | POST | Buyer | Accept quotation and convert into binding purchase order | Stage 8 |
 | `/payments/process` | POST | Buyer | Payment provider adapter / bank wire | Stage 9 |
 | `/invoices/:orderId` | GET | Buyer/Supplier | Commercial invoice generation | Stage 9 |

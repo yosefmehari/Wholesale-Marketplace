@@ -11,6 +11,7 @@ import { favoriteRoutes } from './modules/favorites/favorites.routes';
 import { cartRoutes } from './modules/cart/cart.routes';
 import { orderRoutes } from './modules/orders/orders.routes';
 import { addressRoutes } from './modules/addresses/address.routes';
+import { quotationRoutes } from './modules/quotations/quotations.routes';
 import { authenticate, requireRole } from './middleware/auth.middleware';
 
 const router = Router();
@@ -26,6 +27,7 @@ router.use('/favorites', favoriteRoutes);
 router.use('/cart', cartRoutes);
 router.use('/orders', orderRoutes);
 router.use('/addresses', addressRoutes);
+router.use('/quotations', quotationRoutes);
 
 // Protected admin test endpoint for authorization verification
 router.get('/admin/test', authenticate, requireRole([UserRole.ADMIN]), (req, res) => {
