@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ProductStatus, Prisma } from '@prisma/client';
+import { ProductStatus, Prisma, WholesaleUnit } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 import { AppError } from '../../middleware/error.middleware';
 
@@ -14,7 +14,13 @@ export const getProducts = async (
       category,
       supplier,
       city,
+      subCity,
       minMoq,
+      maxMoq,
+      minPrice,
+      maxPrice,
+      unit,
+      inStock,
       sortBy = 'newest',
       page = '1',
       limit = '12',
@@ -33,6 +39,11 @@ export const getProducts = async (
               { description: { contains: search as string, mode: 'insensitive' } },
               { brand: { contains: search as string, mode: 'insensitive' } },
               { sku: { contains: search as string, mode: 'insensitive' } },
+              {
+                category: {
+                  name: { contains: search as string, mode: 'insensitive' },
+                },
+              },
             ],
           }
         : {}),
@@ -50,19 +61,53 @@ export const getProducts = async (
             },
           }
         : {}),
-      ...(city
+      ...(city || subCity
         ? {
             business: {
-              city: { contains: city as string, mode: 'insensitive' },
+              ...(city
+                ? { city: { contains: city as string, mode: 'insensitive' } }
+                : {}),
+              ...(subCity
+                ? { subCity: { contains: subCity as string, mode: 'insensitive' } }
+                : {}),
             },
           }
         : {}),
-      ...(minMoq ? { minOrderQuantity: { lte: parseInt(minMoq as string, 10) } } : {}),
+      ...(minMoq || maxMoq
+        ? {
+            minOrderQuantity: {
+              ...(minMoq ? { gte: parseInt(minMoq as string, 10) } : {}),
+              ...(maxMoq ? { lte: parseInt(maxMoq as string, 10) } : {}),
+            },
+          }
+        : {}),
+      ...(minPrice || maxPrice
+        ? {
+            priceTiers: {
+              some: {
+                unitPrice: {
+                  ...(minPrice ? { gte: parseFloat(minPrice as string) } : {}),
+                  ...(maxPrice ? { lte: parseFloat(maxPrice as string) } : {}),
+                },
+              },
+            },
+          }
+        : {}),
+      ...(unit ? { wholesaleUnit: unit as WholesaleUnit } : {}),
+      ...(inStock === 'true' || inStock === '1'
+        ? {
+            inventory: {
+              quantity: { gt: 0 },
+            },
+          }
+        : {}),
     };
 
     let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
     if (sortBy === 'oldest') {
       orderBy = { createdAt: 'asc' };
+    } else if (sortBy === 'moq_asc') {
+      orderBy = { minOrderQuantity: 'asc' };
     } else if (sortBy === 'name_asc') {
       orderBy = { name: 'asc' };
     }
@@ -107,6 +152,20 @@ export const getProducts = async (
       }),
       prisma.product.count({ where }),
     ]);
+
+    if (sortBy === 'price_asc') {
+      products.sort((a, b) => {
+        const minA = a.priceTiers[0]?.unitPrice ? Number(a.priceTiers[0].unitPrice) : 0;
+        const minB = b.priceTiers[0]?.unitPrice ? Number(b.priceTiers[0].unitPrice) : 0;
+        return minA - minB;
+      });
+    } else if (sortBy === 'price_desc') {
+      products.sort((a, b) => {
+        const minA = a.priceTiers[0]?.unitPrice ? Number(a.priceTiers[0].unitPrice) : 0;
+        const minB = b.priceTiers[0]?.unitPrice ? Number(b.priceTiers[0].unitPrice) : 0;
+        return minB - minA;
+      });
+    }
 
     res.status(200).json({
       success: true,

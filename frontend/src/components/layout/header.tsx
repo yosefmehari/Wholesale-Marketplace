@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Locale, supportedLocales, Translations } from '@/lib/i18n';
 import { useAuth } from '@/context/auth-context';
-import { Globe, User as UserIcon, LogOut } from 'lucide-react';
+import { Globe, User as UserIcon, LogOut, Heart } from 'lucide-react';
 
 interface HeaderProps {
   locale: Locale;
@@ -77,6 +77,13 @@ export const Header: React.FC<HeaderProps> = ({ locale, onLocaleChange, t }) => 
             {/* Auth Buttons */}
             {isAuthenticated && user ? (
               <div className="flex items-center gap-3">
+                <Link
+                  href="/favorites"
+                  className="p-2 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 transition"
+                  title="Saved Favorites"
+                >
+                  <Heart className="w-4 h-4" />
+                </Link>
                 <div className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700">
                   <UserIcon className="w-3.5 h-3.5 text-emerald-700" />
                   <span className="font-semibold">{user.fullName}</span>

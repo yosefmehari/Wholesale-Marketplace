@@ -7,6 +7,7 @@ import { categoryRoutes } from './modules/categories/categories.routes';
 import { productRoutes } from './modules/products/products.routes';
 import { supplierRoutes } from './modules/suppliers/suppliers.routes';
 import { supplierPortalRoutes } from './modules/supplier-portal/supplier-portal.routes';
+import { favoriteRoutes } from './modules/favorites/favorites.routes';
 import { authenticate, requireRole } from './middleware/auth.middleware';
 
 const router = Router();
@@ -18,6 +19,7 @@ router.use('/categories', categoryRoutes);
 router.use('/products', productRoutes);
 router.use('/suppliers', supplierRoutes);
 router.use('/supplier', supplierPortalRoutes);
+router.use('/favorites', favoriteRoutes);
 
 // Protected admin test endpoint for authorization verification
 router.get('/admin/test', authenticate, requireRole([UserRole.ADMIN]), (req, res) => {

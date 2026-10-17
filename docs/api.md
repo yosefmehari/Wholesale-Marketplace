@@ -42,6 +42,9 @@
 | `/categories` | GET/POST | Public/Admin | Category discovery & management | Stage 4 |
 | `/products` | GET/POST | Public/Supplier | Product catalog & tiered pricing | Stage 5 |
 | `/products/:slug` | GET | Public | Product details & price tiers | Stage 5 |
+| `/favorites` | GET | Buyer | Get buyer's saved favorite products | Stage 6 |
+| `/favorites/:productId` | POST/DELETE | Buyer | Add or remove product from favorites | Stage 6 |
+| `/favorites/check/:productId` | GET | Buyer/Public | Check if product is favorited | Stage 6 |
 | `/cart` | GET/POST/DELETE | Buyer | Cart management & validation | Stage 7 |
 | `/checkout` | POST | Buyer | Concurrency-safe supplier split order | Stage 7 |
 | `/orders` | GET/POST | Buyer/Supplier | Order lifecycle & tracking | Stage 7 |
